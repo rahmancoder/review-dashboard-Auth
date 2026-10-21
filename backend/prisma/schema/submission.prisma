@@ -1,0 +1,32 @@
+/// A project submitted by a student for mentor review.
+model Submission {
+    id String @id @default(uuid())
+
+    projectName String
+    repoUrl     String
+    liveUrl     String
+    description String
+
+    status SubmissionStatus @default(PENDING)
+
+    /// Canonical form of repoUrl (lowercase host, no .git / trailing slash / query).
+    /// UNIQUE => the database itself guarantees the same repo cannot be submitted twice,
+    /// even when two requests race past the application-level check.
+    repoKey String @unique
+
+    studentId String
+    student   User   @relation("StudentSubmissions", fields: [studentId], references: [id], onDelete: Cascade)
+
+    reviewerId String?
+    reviewer   User?     @relation("SubmissionReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+    reviewedAt DateTime?
+
+    /// 1 Submission -> N Feedback (full review history / audit trail)
+    feedbacks Feedback[]
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@index([status, createdAt(sort: Desc)])
+    @@index([studentId, createdAt(sort: Desc)])
+}

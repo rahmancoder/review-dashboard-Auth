@@ -1,0 +1,22 @@
+/// A mentor's decision + comment on a submission.
+/// Modelled as its own table (not a column on Submission) so that:
+///  - a submission can carry a history of decisions/comments,
+///  - each entry records WHO (mentor) decided and WHEN,
+///  - Users <-> Submissions stays a clean one-to-many on both sides.
+/// Many-to-many Mentor <-> Submission is therefore expressed through Feedback (explicit join table with payload).
+model Feedback {
+    id String @id @default(uuid())
+
+    decision  SubmissionStatus
+    comment   String?
+    createdAt DateTime         @default(now())
+
+    submissionId String
+    submission   Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+    mentorId String
+    mentor   User   @relation("MentorFeedbacks", fields: [mentorId], references: [id], onDelete: Restrict)
+
+    @@index([submissionId, createdAt(sort: Desc)])
+    @@index([mentorId])
+}
