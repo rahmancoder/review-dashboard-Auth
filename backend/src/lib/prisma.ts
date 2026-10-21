@@ -1,9 +1,25 @@
+// import { PrismaPg } from "@prisma/adapter-pg";
+// import { PrismaClient } from "../generated/prisma/client.js";
+// import { env } from "../config/env.js";
+
+// // Prisma 7 uses driver adapters: the query engine is no longer bundled,
+// // the `pg` driver talks to PostgreSQL directly.
+// const adapter = new PrismaPg({ connectionString: env.DATABASE_URL });
+
+// export const prisma = new PrismaClient({ adapter });
+
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../generated/prisma/client.js";
 import { env } from "../config/env.js";
 
-// Prisma 7 uses driver adapters: the query engine is no longer bundled,
-// the `pg` driver talks to PostgreSQL directly.
-const adapter = new PrismaPg({ connectionString: env.DATABASE_URL });
+const adapter = new PrismaPg({
+    connectionString: env.DATABASE_URL
+});
 
-export const prisma = new PrismaClient({ adapter });
+export const prisma = new PrismaClient({
+    adapter,
+    log:
+        env.NODE_ENV === "development"
+            ? ["warn", "error"]
+            : ["error"]
+});
