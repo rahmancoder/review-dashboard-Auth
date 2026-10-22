@@ -1,6 +1,7 @@
 import { Prisma } from "../../generated/prisma/client.js";
 import { prisma } from "../../lib/prisma.js";
 import { AppError } from "../../utils/AppError.js";
+import { normalizeRepoUrl } from "../../utils/url.js";
 
 import type { CreateSubmissionInput, PaginationQuery } from "./submissions.schema.js";
 
@@ -28,8 +29,10 @@ const withLatestFeedback = {
 
 export async function createSubmission(studentId: string, input: CreateSubmissionInput) {
 
-    ;
-    const repoKey = input.repoUrl;
+
+    // const repoKey = input.repoUrl;
+
+    const repoKey = normalizeRepoUrl(input.repoUrl);
 
     // Friendly pre-check (gives a field-level error)...
     const existing = await prisma.submission.findUnique({
