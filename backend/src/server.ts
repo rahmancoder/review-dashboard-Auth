@@ -1,31 +1,25 @@
-import app from "./app.js";
+import { app } from "./app.js";
 import { env } from "./config/env.js";
+import { prisma } from "./lib/prisma.js";
 
+const server = app.listen(env.PORT, () => {
 
-async function startServer() {
-    try {
+    console.log(`API listening on http://localhost:${env.PORT} (${env.NODE_ENV})`);
 
+});
 
-        const server = app.listen(env.PORT, () => {
-            console.log(
-                `Review Dashboard API running on port ${env.PORT}`
-            );
-        });
+async function shutdown(signal: string) {
+    console.log(`${signal} received, shutting down...`);
 
-        const shutdown = (signal: string) => {
-            console.log(`${signal} received. Shutting down...`);
+    server.close(async () => {
+        await prisma.$disconnect();
 
+        process.exit(0);
 
-        };
+    });
 
-    }
-
-
-    catch (error) {
-        console.error("Failed to start the server:", error);
-
-        process.exit(1);
-    }
+    setTimeout(() => process.exit(1), 10_000).unref();
 }
 
-void startServer();
+process.on("SIGINT", () => void shutdown("SIGINT"));
+process.on("SIGTERM", () => void shutdown("SIGTERM"));
