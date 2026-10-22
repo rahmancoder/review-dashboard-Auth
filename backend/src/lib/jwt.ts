@@ -1,75 +1,48 @@
-import jwt, { type JwtPayload } from "jsonwebtoken";
-
-import type { Role } from "../generated/prisma/client.js";
-
+import jwt from "jsonwebtoken";
+import { z } from "zod";
 import { env } from "../config/env.js";
 
+import type { Role } from "../generated/prisma/enums.js";
 
-export type AccessTokenPayload = {
-    sub: string;
-    role: Role;
-};
+export type AuthTokenPayload = { sub: string; role: Role };
 
 
-export function signAccessToken(
-    userId: string,
-    role: Role
-): string {
-    return jwt.sign(
-        { role },
-        env.JWT_ACCESS_SECRET,
-        {
-            subject: userId,
-            expiresIn: "15m"
-        }
-    );
+const payloadSchema = z.object({
+    sub: z.string().min(1),
+    role: z.enum(["STUDENT", "MENTOR"]),
+});
+
+
+export function signAccessToken(payload: AuthTokenPayload): string {
+
+    return jwt.sign(payload, env.JWT_ACCESS_SECRET, {
+        expiresIn: env.JWT_ACCESS_TTL_SECONDS,
+        algorithm: "HS256",
+    });
 }
 
 
-export function signRefreshToken(userId: string): string {
-    return jwt.sign(
-        { type: "refresh" },
-        env.JWT_REFRESH_SECRET,
-        {
-            subject: userId,
-            expiresIn: "7d"
-        }
-    );
+export function signRefreshToken(payload: AuthTokenPayload): string {
+
+    return jwt.sign(payload, env.JWT_REFRESH_SECRET, {
+        expiresIn: env.JWT_REFRESH_TTL_SECONDS,
+        algorithm: "HS256",
+    });
 }
 
-export function verifyAccessToken(
-    token: string
-): AccessTokenPayload {
-    const payload = jwt.verify(
-        token,
-        env.JWT_ACCESS_SECRET
-    ) as JwtPayload;
+/** Throws jsonwebtoken errors (TokenExpiredError / JsonWebTokenError) on failure. */
+export function verifyAccessToken(token: string): AuthTokenPayload {
 
-    if (
-        typeof payload.sub !== "string" ||
-        (payload.role !== "STUDENT" && payload.role !== "MENTOR")
-    ) {
-        throw new Error("Invalid access token payload");
-    }
+    const decoded = jwt.verify(token, env.JWT_ACCESS_SECRET, { algorithms: ["HS256"] });
 
-    return {
-        sub: payload.sub,
-        role: payload.role as Role
-    };
+    return payloadSchema.parse(decoded);
 }
 
-export function verifyRefreshToken(token: string): string {
-    const payload = jwt.verify(
-        token,
-        env.JWT_REFRESH_SECRET
-    ) as JwtPayload;
 
-    if (
-        typeof payload.sub !== "string" ||
-        payload.type !== "refresh"
-    ) {
-        throw new Error("Invalid refresh token");
-    }
 
-    return payload.sub;
+export function verifyRefreshToken(token: string): AuthTokenPayload {
+
+    const decoded = jwt.verify(token, env.JWT_REFRESH_SECRET, { algorithms: ["HS256"] });
+
+    return payloadSchema.parse(decoded);
 }
