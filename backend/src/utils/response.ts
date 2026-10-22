@@ -1,23 +1,24 @@
 import type { Response } from "express";
 
-type SuccessResponse<T> = {
-    success: true;
-    message: string;
-    data: T;
+export type PaginationMeta = {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
 };
 
-export function sendSuccess<T>(
-    res: Response,
-    data: T,
-    message = "Request successful",
-    statusCode = 200
-) {
-    const response: SuccessResponse<T> = {
+export function sendSuccess<T>(res: Response, data: T, status = 200, meta?: PaginationMeta) {
+
+    return res.status(status).json({
         success: true,
-        message,
-        data
-    };
+        data, ...(meta ? { meta } : {})
+    });
 
-
-    return res.status(statusCode).json(response);
 }
+
+export const buildMeta = (page: number, limit: number, total: number): PaginationMeta => ({
+    page,
+    limit,
+    total,
+    totalPages: Math.max(1, Math.ceil(total / limit)),
+});
