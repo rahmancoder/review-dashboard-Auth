@@ -4,7 +4,9 @@ import { authorize } from "../../middlewares/authorize.js";
 import { validate } from "../../middlewares/validate.js";
 import * as controller from "./submissions.controller.js";
 
+
 export const submissionsRouter = Router();
+
 
 submissionsRouter.use(authenticate);
 
@@ -22,12 +24,12 @@ submissionsRouter.get("/me",
     authorize("STUDENT"),
 
     // validate({ query: paginationQuery }),
-    // controller.listMine
+    controller.listMine
 
 );
 
 
 submissionsRouter.get("/:id",
     // validate({ params: idParamSchema }),
-    // controller.getOne
+    controller.getOne
 );

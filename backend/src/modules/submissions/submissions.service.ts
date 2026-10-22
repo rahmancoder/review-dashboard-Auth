@@ -80,12 +80,69 @@ const duplicateError = (own: boolean) =>
 
 
 
+
 export async function listMySubmissions(studentId: string, { page, limit }: PaginationQuery) {
 
     const where = {
         studentId
     };
+    const [items, total] = await prisma.$transaction([
 
-    return {};
+        prisma.submission.findMany({
+            where,
+            orderBy: { createdAt: "desc" },
+            skip: (page - 1) * limit,
+            take: limit,
+            include: withLatestFeedback,
+        }),
+
+        prisma.submission.count({ where }),
+
+    ]);
+
+    return { items, total };
+}
+
+/** Ownership check: a student can only read their own submission; mentors can read any. */
+export async function getSubmission(id: string, user: { id: string; role: "STUDENT" | "MENTOR" }) {
+
+    const submission = await prisma.submission.findUnique({
+        where: {
+            id
+        },
+        include: {
+            student: {
+                select: {
+                    id: true,
+                    name: true,
+                    email: true
+                }
+            },
+
+            feedbacks: {
+                orderBy: { createdAt: "desc" },
+                select: {
+                    id: true,
+                    decision: true,
+                    comment: true,
+                    createdAt: true,
+                    mentor: {
+                        select: {
+                            name: true
+                        }
+                    }
+                },
+            },
+        },
+    });
+
+
+    // 404 (not 403) for other students' submissions so ids can't be probed.
+    if (!submission || (user.role === "STUDENT" && submission.studentId !== user.id)) {
+
+        throw AppError.notFound("Submission not found");
+    }
+
+    return submission;
 }
 
