@@ -22,6 +22,17 @@ const envSchema = z.object({
     BCRYPT_ROUNDS: z.coerce.number().int().min(4).max(15).default(12),
 
 
+    SUBMISSION_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(5),
+
+    SUBMISSION_RATE_LIMIT_WINDOW_MINUTES: z.coerce.number().positive().default(10),
+
+    AUTH_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(20),
+
+    AUTH_RATE_LIMIT_WINDOW_MINUTES: z.coerce.number().positive().default(15),
+
+    TRUST_PROXY: z.coerce.number().int().min(0).default(0),
+
+
 });
 
 const parsed = envSchema.safeParse(process.env);

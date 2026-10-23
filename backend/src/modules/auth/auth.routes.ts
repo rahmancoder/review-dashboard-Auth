@@ -1,6 +1,8 @@
 import { Router } from "express";
 import { authenticate } from "../../middlewares/authenticate.js";
 import * as controller from "./auth.controller.js";
+import { loginSchema, refreshSchema, registerSchema } from "./auth.schema.js";
+import { validate } from "../../middlewares/validate.js";
 
 export const authRouter = Router();
 
@@ -9,7 +11,7 @@ export const authRouter = Router();
 authRouter.post("/register",
 
     // authLimiter,
-    // validate({ body: registerSchema }),
+    validate({ body: registerSchema }),
 
     controller.register
 );
@@ -18,7 +20,7 @@ authRouter.post("/register",
 authRouter.post("/login",
 
     // authLimiter,
-    // validate({ body: loginSchema }),
+    validate({ body: loginSchema }),
 
     controller.login
 );
@@ -27,8 +29,8 @@ authRouter.post("/login",
 authRouter.post("/refresh",
 
     // authLimiter, 
-    // validate({ body: refreshSchema }), 
-    // controller.refresh
+    validate({ body: refreshSchema }),
+    controller.refresh
 );
 
 
