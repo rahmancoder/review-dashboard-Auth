@@ -7,8 +7,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "tsx watch src/server.ts",
     "typecheck": "tsc --noEmit",
-    "build": "prisma generate && tsc -p tsconfig.build.json",
-    "start": "node dist/src/server.js"
+    "build": "tsup",
+    "start": "node dist/server.js"
   },
   "keywords": [],
   "author": "",
@@ -37,6 +37,7 @@
     "@types/node": "^26.6.5",
     "@types/pg": "^8.23.1",
     "prisma": "^7.10.1",
+    "tsup": "^9.0.0",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2"
   }
