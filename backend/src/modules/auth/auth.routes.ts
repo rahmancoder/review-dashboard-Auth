@@ -3,6 +3,7 @@ import { authenticate } from "../../middlewares/authenticate.js";
 import * as controller from "./auth.controller.js";
 import { loginSchema, refreshSchema, registerSchema } from "./auth.schema.js";
 import { validate } from "../../middlewares/validate.js";
+import { authLimiter } from "../../middlewares/rateLimiters.js";
 
 export const authRouter = Router();
 
@@ -10,7 +11,7 @@ export const authRouter = Router();
 
 authRouter.post("/register",
 
-    // authLimiter,
+    authLimiter,
     validate({ body: registerSchema }),
 
     controller.register
@@ -19,7 +20,7 @@ authRouter.post("/register",
 
 authRouter.post("/login",
 
-    // authLimiter,
+    authLimiter,
     validate({ body: loginSchema }),
 
     controller.login
@@ -28,7 +29,7 @@ authRouter.post("/login",
 
 authRouter.post("/refresh",
 
-    // authLimiter, 
+    authLimiter,
     validate({ body: refreshSchema }),
     controller.refresh
 );

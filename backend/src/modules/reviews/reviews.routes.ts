@@ -20,7 +20,7 @@ reviewsRouter.use(
 );
 
 reviewsRouter.get("/submissions",
-    // validate({ query: listReviewsQuery }), 
+    validate({ query: listReviewsQuery }),
     controller.list);
 
 reviewsRouter.get("/stats",
@@ -31,7 +31,7 @@ reviewsRouter.patch(
 
     "/submissions/:id/status",
 
-    // validate({ params: idParamSchema, body: reviewDecisionSchema }),
+    validate({ params: idParamSchema, body: reviewDecisionSchema }),
 
     controller.decide,
 );

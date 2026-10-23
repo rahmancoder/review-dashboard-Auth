@@ -3,6 +3,8 @@ import { authenticate } from "../../middlewares/authenticate.js";
 import { authorize } from "../../middlewares/authorize.js";
 import { validate } from "../../middlewares/validate.js";
 import * as controller from "./submissions.controller.js";
+import { submissionLimiter } from "../../middlewares/rateLimiters.js";
+import { createSubmissionSchema, idParamSchema, paginationQuery } from "./submissions.schema.js";
 
 
 export const submissionsRouter = Router();
@@ -15,21 +17,21 @@ submissionsRouter.use(authenticate);
 submissionsRouter.post(
     "/",
     authorize("STUDENT"),
-    // submissionLimiter,
-    // validate({ body: createSubmissionSchema }),
+    submissionLimiter,
+    validate({ body: createSubmissionSchema }),
     controller.create,
 );
 
 submissionsRouter.get("/me",
     authorize("STUDENT"),
 
-    // validate({ query: paginationQuery }),
+    validate({ query: paginationQuery }),
     controller.listMine
 
 );
 
 
 submissionsRouter.get("/:id",
-    // validate({ params: idParamSchema }),
+    validate({ params: idParamSchema }),
     controller.getOne
 );
