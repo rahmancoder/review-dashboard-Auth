@@ -1,40 +1,37 @@
-import * as React from "react";
-import { Slot } from "radix-ui";
-import { cva, type VariantProps } from "class-variance-authority";
-import { cn } from "@/lib/utils";
+"use client";
 
-const buttonVariants = cva(
-    "inline-flex shrink-0 items-center justify-center gap-2 rounded-md text-sm font-medium whitespace-nowrap transition-all outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
-    {
-        variants: {
-            variant: {
-                default: "bg-primary text-primary-foreground shadow-xs hover:bg-primary/90",
-                destructive: "bg-destructive text-white shadow-xs hover:bg-destructive/90",
-                outline: "border bg-card shadow-xs hover:bg-accent hover:text-accent-foreground",
-                secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-                ghost: "hover:bg-accent hover:text-accent-foreground",
-                link: "text-primary underline-offset-4 hover:underline",
-            },
-            size: {
-                default: "h-9 px-4 py-2",
-                sm: "h-8 gap-1.5 rounded-md px-3",
-                lg: "h-10 rounded-md px-6",
-                icon: "size-9",
-            },
-        },
-        defaultVariants: { variant: "default", size: "default" },
-    },
-);
+import { useEffect } from "react";
+import Link from "next/link";
 
-function Button({
-    className,
-    variant,
-    size,
-    asChild = false,
-    ...props
-}: React.ComponentProps<"button"> & VariantProps<typeof buttonVariants> & { asChild?: boolean }) {
-    const Comp = asChild ? Slot.Root : "button";
-    return <Comp data-slot="button" className={cn(buttonVariants({ variant, size, className }))} {...props} />;
+import { Button, buttonVariants } from "@/components/ui/button";
+
+/** Root error boundary (500). `reset()` re-renders the segment so transient failures can recover without a full reload. */
+export default function Error({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+  useEffect(() => {
+    console.error(error);
+  }, [error]);
+
+  return (
+    <main className="flex min-h-screen flex-col items-center justify-center gap-3 px-4 text-center">
+
+      <p className="text-sm font-semibold text-destructive">500</p>
+
+      <h1 className="text-3xl font-bold tracking-tight">Something went wrong</h1>
+
+      <p className="max-w-md text-muted-foreground">An unexpected error occurred. You can try again or go back home.</p>
+
+      {error.digest && <p className="text-xs text-muted-foreground">Reference: {error.digest}</p>}
+
+      <div className="flex gap-2">
+
+        <Button onClick={reset}>Try again</Button>
+
+        <Link href="/" className={buttonVariants({ variant: "outline" })}>
+          Home
+        </Link>
+
+      </div>
+
+    </main>
+  );
 }
-
-export { Button, buttonVariants };

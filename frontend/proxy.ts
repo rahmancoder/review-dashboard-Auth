@@ -1,10 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { ACCESS_COOKIE, REFRESH_COOKIE, accessCookieOptions, refreshCookieOptions } from "@/lib/cookies";
-
 import { refreshTokens } from "@/service/refreshToken";
-
 import { homeFor, verifyAccessToken } from "@/utils/jwt";
-
 import type { AuthTokens } from "@/lib/types";
 
 /**
@@ -14,95 +11,103 @@ import type { AuthTokens } from "@/lib/types";
  * It only checks the JWT signature (no DB / API call), so it adds ~no latency.
  * The API re-checks everything, so this is UX + a first line of defence, not the only one.
  */
+
 const AUTH_PAGES = ["/login", "/register"];
 const STUDENT_AREA = "/dashboard";
 const MENTOR_AREA = "/mentor-dashboard";
 
+
+
 const inArea = (path: string, area: string) => path === area || path.startsWith(`${area}/`);
+
+
 
 function applyCookies(res: NextResponse, tokens: AuthTokens) {
 
-    res.cookies.set(ACCESS_COOKIE, tokens.accessToken, accessCookieOptions(tokens.accessTokenExpiresIn));
-    res.cookies.set(REFRESH_COOKIE, tokens.refreshToken, refreshCookieOptions(tokens.refreshTokenExpiresIn));
+  res.cookies.set(ACCESS_COOKIE, tokens.accessToken, accessCookieOptions(tokens.accessTokenExpiresIn));
 
-    return res;
+  res.cookies.set(REFRESH_COOKIE, tokens.refreshToken, refreshCookieOptions(tokens.refreshTokenExpiresIn));
+
+  return res;
 }
 
 export async function proxy(req: NextRequest) {
 
-    const { pathname } = req.nextUrl;
+  const { pathname } = req.nextUrl;
 
-    const isAuthPage = AUTH_PAGES.includes(pathname);
+  const isAuthPage = AUTH_PAGES.includes(pathname);
 
-    const isStudentArea = inArea(pathname, STUDENT_AREA);
+  const isStudentArea = inArea(pathname, STUDENT_AREA);
+  const isMentorArea = inArea(pathname, MENTOR_AREA);
 
-    const isMentorArea = inArea(pathname, MENTOR_AREA);
+  if (!isAuthPage && !isStudentArea && !isMentorArea) return NextResponse.next();
 
-    if (!isAuthPage && !isStudentArea && !isMentorArea) return NextResponse.next();
+  let session = verifyAccessToken(req.cookies.get(ACCESS_COOKIE)?.value);
+  let refreshed: AuthTokens | null = null;
 
-    let session = verifyAccessToken(req.cookies.get(ACCESS_COOKIE)?.value);
+  if (!session) {
 
-    let refreshed: AuthTokens | null = null;
+    const refreshToken = req.cookies.get(REFRESH_COOKIE)?.value;
 
+    if (refreshToken) {
 
-    if (!session) {
-
-        const refreshToken = req.cookies.get(REFRESH_COOKIE)?.value;
-
-        if (refreshToken) {
-            refreshed = await refreshTokens(refreshToken);
-            if (refreshed) session = verifyAccessToken(refreshed.accessToken);
-        }
+      refreshed = await refreshTokens(refreshToken);
+      if (refreshed) session = verifyAccessToken(refreshed.accessToken);
     }
+  }
 
 
-    if (!session) {
-        if (isAuthPage) return NextResponse.next();
 
-        const url = new URL("/login", req.url);
-        url.searchParams.set("next", pathname);
+  if (!session) {
 
-        const res = NextResponse.redirect(url);
+    if (isAuthPage) return NextResponse.next();
 
-        res.cookies.delete(ACCESS_COOKIE);
-        res.cookies.delete(REFRESH_COOKIE);
+    const url = new URL("/login", req.url);
 
-        return res;
-    }
+    url.searchParams.set("next", pathname);
 
-    const wrongArea = (isStudentArea && session.role !== "STUDENT") || (isMentorArea && session.role !== "MENTOR");
+    const res = NextResponse.redirect(url);
 
-    if (isAuthPage || wrongArea) {
+    res.cookies.delete(ACCESS_COOKIE);
+    res.cookies.delete(REFRESH_COOKIE);
 
-        const res = NextResponse.redirect(new URL(homeFor(session.role), req.url));
-
-        return refreshed ? applyCookies(res, refreshed) : res;
-    }
+    return res;
+  }
 
 
-    if (refreshed) {
-        // Make the NEW token visible to the page being rendered in this same request, and persist it in the browser.
-        const jar = new Map(req.cookies.getAll().map((c) => [c.name, c.value]));
-
-        jar.set(ACCESS_COOKIE, refreshed.accessToken);
-        jar.set(REFRESH_COOKIE, refreshed.refreshToken);
-
-        const headers = new Headers(req.headers);
-
-        headers.set("cookie", [...jar].map(([k, v]) => `${k}=${v}`).join("; "));
+  const wrongArea = (isStudentArea && session.role !== "STUDENT") || (isMentorArea && session.role !== "MENTOR");
 
 
-        return applyCookies(NextResponse.next({ request: { headers } }), refreshed);
-    }
+  if (isAuthPage || wrongArea) {
+
+    const res = NextResponse.redirect(new URL(homeFor(session.role), req.url));
+
+    return refreshed ? applyCookies(res, refreshed) : res;
+  }
+
+  if (refreshed) {
+    // Make the NEW token visible to the page being rendered in this same request, and persist it in the browser.
+    const jar = new Map(req.cookies.getAll().map((c) => [c.name, c.value]));
 
 
-    return NextResponse.next();
+    jar.set(ACCESS_COOKIE, refreshed.accessToken);
+    jar.set(REFRESH_COOKIE, refreshed.refreshToken);
+
+    const headers = new Headers(req.headers);
+
+    headers.set("cookie", [...jar].map(([k, v]) => `${k}=${v}`).join("; "));
+
+    return applyCookies(NextResponse.next({ request: { headers } }), refreshed);
+  }
+
+  return NextResponse.next();
 }
+
 
 
 export const config = {
 
-    matcher: ["/((?!api|_next/static|_next/image|favicon.ico|.*\\..*).*)"],
 
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|.*\\..*).*)"],
 
 };
