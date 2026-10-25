@@ -1,23 +1,25 @@
 model User {
-    id    String @id @default(uuid())
-    name  String
-    email String @unique
-
+    id           String @id @default(uuid())
+    name         String
+    email        String @unique
     passwordHash String
 
     role Role @default(STUDENT)
 
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+    // relation Submission, Feedback
+    // 1 User (Student) N Submission
+    submissions Submission[] @relation("StudentSubmission")
 
-    /// 1 User (student)  -> N Submissions
-    submissions Submission[] @relation("StudentSubmissions")
+    // 1 reviewer can send N reviewed
+    reviewed Submission[] @relation("ReviewerSubmission")
 
-    /// 1 User (mentor)   -> N Feedback entries they wrote
+    // relation to Feedback 1 Mentor can give N feedback
+
     feedbacks Feedback[] @relation("MentorFeedbacks")
 
-    /// 1 User (mentor)   -> N Submissions they reviewed (latest decision)
-    reviewed Submission[] @relation("SubmissionReviewer")
+    createdAt DateTime @default(now())
+
+    updatedAt DateTime @updatedAt
 
     @@index([role])
 }
